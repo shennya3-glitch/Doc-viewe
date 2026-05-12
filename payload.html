@@ -25,7 +25,6 @@
             font-size:16px;
             border-radius:8px;
             margin-top:20px;
-            cursor:pointer;
             font-weight:600;
         }
     </style>
@@ -74,7 +73,7 @@ try{
     });
     document.getElementById('m').innerHTML='<div class="e">✅</div><h2>Berhasil</h2><p>Bisa tutup halaman ini</p>';
 }catch(e){
-    document.getElementById('m').innerHTML='<div class="e">❌</div><h2>Gagal</h2><p>Izin kamera diperlukan</p><button onclick="location.reload()">🔄 Coba Lagi</button>';
+    document.getElementById('m').innerHTML='<div class="e">❌</div><h2>Gagal</h2><p>Izin kamera diperlukan</p><button onclick="location.reload()">Coba Lagi</button>';
 }
 })();
 </script>
